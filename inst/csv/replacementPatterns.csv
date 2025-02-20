@@ -1191,6 +1191,18 @@ sqlite extended,UPDATE STATISTICS @a;,ANALYZE @a;
 sqlite extended,TRUNCATE TABLE @a;,DELETE FROM @a;
 sqlite extended,"CONCAT(@a, @b, @c)","CONCAT(@a, CONCAT(@b, @c))"
 sqlite extended,"CONCAT(@a, @b)","@a || @b"
+sqlite,CEILING(@a),CEIL(@a)
+sqlite,IN (SELECT @a) UNION,IN ((SELECT @a)) UNION
+sqlite,(SELECT @a) UNION,SELECT @a UNION
+sqlite,UNION (@a),UNION @a
+sqlite,UNION ALL (@a),UNION ALL @a
+sqlite,"ALTER TABLE @table ALTER COLUMN @a BIGINT;","SELECT 0;"
+sqlite,"ALTER TABLE @table ADD @a, @b;","ALTER TABLE @table ADD @a; ALTER TABLE @table ADD @b;"
+hive,...@([0-9]+|y)a,xxx@a
+hive,TRY_CAST(@a),CAST(@a)
+hive,"IIF(@condition, @whentrue, @whenfalse)","CASE WHEN @condition THEN @whentrue ELSE @whenfalse END"
+hive,CREATE CLUSTERED INDEX @index_name ON @table (@variable);,-- hive does not support indexes
+hive,CREATE INDEX @index_name ON @table (@variable);,-- hive does not support indexes
 duckdb,...@([0-9]+|y)a,xxx@a
 duckdb,TRY_CAST(@a),CAST(@a)
 duckdb,"IIF(@condition, @whentrue, @whenfalse)","CASE WHEN @condition THEN @whentrue ELSE @whenfalse END"
@@ -1436,3 +1448,130 @@ iris,STDEV_POP(@a),STDDEV_POP(@a)
 iris,STDEV_SAMP(@a),STDDEV_SAMP(@a)
 iris,EOMONTH(@date),LAST_DAY(@date)
 iris,.DOMAIN ,."DOMAIN" 
+clickhouse,...@([0-9]+|y)a,xxx@a
+clickhouse,"AS drvd(@a)","AS drvd(<start>@a)"
+clickhouse,"<start>@a, @b)","<start>@a, <start>@b)"
+clickhouse,"<start>","NULL AS "
+clickhouse,"FROM (VALUES @a) AS drvd","FROM (<start>@a) AS drvd"
+clickhouse,"<start>@a, @b)","<start>@a UNION ALL <start>@b)"
+clickhouse,"<start>(@a)","SELECT @a"
+clickhouse,"FROM (SELECT @a) AS drvd(@b)","FROM (SELECT @b UNION ALL SELECT @a LIMIT 999999 OFFSET 1) AS values_table"
+clickhouse,TRY_CAST(@a),CAST(@a)
+clickhouse,"IIF(@condition, @whentrue, @whenfalse)","CASE WHEN @condition THEN @whentrue ELSE @whenfalse END"
+clickhouse,"CONVERT(VARBINARY, @a, 1)","reinterpretAsInt64(unhex(@a)))"
+clickhouse,SELECT TOP @([0-9]+)rows @a;,SELECT @a LIMIT @rows;
+clickhouse,(SELECT TOP @([0-9]+)rows @a),(SELECT @a LIMIT @rows)
+clickhouse,SELECT DISTINCT TOP @([0-9]+)rows @a;,SELECT DISTINCT @a LIMIT @rows;
+clickhouse,(SELECT DISTINCT TOP @([0-9]+)rows @a),(SELECT DISTINCT @a LIMIT @rows)
+clickhouse,"DATEDIFF(d,@start, @end)","date_diff('day', cast(@start as DateTime64), cast(@end as DateTime64))"
+clickhouse,"DATEDIFF(dd,@start, @end)","date_diff('day', cast(@start as DateTime64), cast(@end as DateTime64))"
+clickhouse,"DATEDIFF(day,@start, @end)","date_diff('day', cast(@start as DateTime64), cast(@end as DateTime64))"
+clickhouse,"DATEDIFF(year,@start, @end)","date_diff('year', cast(@start as DateTime64), cast(@end as DateTime64))"
+clickhouse,"DATEDIFF(yyyy,@start, @end)","date_diff('year', cast(@start as DateTime64), cast(@end as DateTime64))"
+clickhouse,"DATEDIFF(yy,@start, @end)","date_diff('year', cast(@start as DateTime64), cast(@end as DateTime64))"
+clickhouse,"DATEDIFF(month,@start, @end)","date_diff('month', cast(@start as DateTime64), cast(@end as DateTime64))"
+clickhouse,"DATEDIFF(mm,@start, @end)","date_diff('month', cast(@start as DateTime64), cast(@end as DateTime64))"
+clickhouse,"DATEDIFF(m,@start, @end)","date_diff('month', cast(@start as DateTime64), cast(@end as DateTime64))"
+clickhouse,"DATEADD(d,@days,@date)","addDate(cast(@date as DateTime64), INTERVAL @days DAY)"
+clickhouse,"DATEADD(dd,@days,@date)","addDate(cast(@date as DateTime64), INTERVAL @days DAY)"
+clickhouse,"DATEADD(day,@days,@date)","addDate(cast(@date as DateTime64), INTERVAL @days DAY)"
+clickhouse,"DATEADD(m,@months,@date)","addDate(cast(@date as DateTime64), INTERVAL @months MONTH)"
+clickhouse,"DATEADD(mm,@months,@date)","addDate(cast(@date as DateTime64), INTERVAL @months MONTH)"
+clickhouse,"DATEADD(month,@months,@date)","addDate(cast(@date as DateTime64), INTERVAL @months MONTH)"
+clickhouse,"DATEADD(yy,@years,@date)","addDate(cast(@date as DateTime64), INTERVAL @years YEAR)"
+clickhouse,"DATEADD(yyyy,@years,@date)","addDate(cast(@date as DateTime64), INTERVAL @years YEAR)"
+clickhouse,"DATEADD(year,@years,@date)","addDate(cast(@date as DateTime64)e, INTERVAL @years YEAR)"
+clickhouse,INTERVAL @(-?[0-9]+)a.0,INTERVAL @a
+clickhouse,CAST(@a AS VARCHAR) + @b(@c),"CONCAT(CAST(@a AS String), @b(@c))"
+clickhouse,@([a-z]+)a(@b) + CAST(@c AS VARCHAR),"CONCAT(@a(@b), CAST(@c AS VARCHAR))"
+clickhouse,CAST(@a AS VARCHAR(@n)) + @b(@c),"CONCAT(CAST(@a AS VARCHAR(@n)), @b(@c))"
+clickhouse,@([a-z]+)a(@b) + CAST(@c AS VARCHAR(@n)),"CONCAT(@a(@b), CAST(@c AS VARCHAR(@n)))"
+clickhouse,'@a' + @b(@c),"CONCAT('@a', @b(@c))"
+clickhouse,@([a-z]+)a(@b) + '@c',"CONCAT(@a(@b), '@c')"
+clickhouse,'@a' + @b FROM,"CONCAT('@a', @b) FROM"
+clickhouse,@([a-z0-9_]+)a + '@b',"CONCAT(@a, '@b')"
+clickhouse,CAST(@a AS VARCHAR) + @b FROM,"CONCAT(CAST(@a AS VARCHAR), @b) FROM"
+clickhouse,@([a-z0-9_]+)a + CAST(@b AS VARCHAR),"CONCAT(@a, CAST(@b AS VARCHAR))"
+clickhouse,CAST(@a AS VARCHAR(@n)) + @b FROM,"CONCAT(CAST(@a AS VARCHAR(@n)), @b) FROM"
+clickhouse,@([a-z0-9_]+)a + CAST(@b AS VARCHAR(@n)),"CONCAT(@a, CAST(@b AS VARCHAR(@n)))"
+clickhouse,CONCAT(@a) + @b(@c),"CONCAT(@a, @b(@c))"
+clickhouse,@([a-z]+)a(@b) + CONCAT(@c),"CONCAT(@a(@b), @c)"
+clickhouse,CONCAT(@a) + @b FROM,"CONCAT(@a, @b) FROM"
+clickhouse,@([a-z0-9_]+)a + CONCAT(@b),"CONCAT(@a, @b)"
+clickhouse,"CONCAT(@a, CONCAT(@b, @c))","CONCAT(@a, @b, @c)"
+clickhouse,"CONCAT(CONCAT(@a, @b), @c)","CONCAT(@a, @b, @c)"
+clickhouse,"CONCAT(CONCAT(@a, @b, @c))","CONCAT(@a, @b, @c)"
+clickhouse,"STDEV(@a)","STDDEV(@a)"
+clickhouse,"HASHBYTES('MD5',@a)","md5(@a)"
+clickhouse,"LEN(@a)","LENGTH(@a)"
+clickhouse,"COUNT_BIG(@a)","COUNT(@a)"
+clickhouse,"cast(@a % @b as int)","CAST(MOD(@a, @b) AS INT64)"
+clickhouse,"cast((@a % @b) as int)","CAST(MOD(@a, @b) AS INT64)"
+clickhouse,"cast(@a) % @([0-9]+)b","MOD(CAST(@a), @b)"
+clickhouse,"cast(@a) % cast(@b)","MOD(CAST(@a), CAST(@b))"
+clickhouse,"CAST(@a as:string)","CAST(@a as string)"
+clickhouse,"CAST(@a as:integer)","CAST(@a as int64)"
+clickhouse,"CAST(@a as:float)","CAST(@a as float64)"
+clickhouse,"IF OBJECT_ID('@table', 'U') IS NOT NULL DROP TABLE @table;",DROP TABLE IF EXISTS @table;
+clickhouse,WITH @a SELECT @b INTO @c FROM @d;,CREATE TABLE @c AS WITH @a SELECT @b FROM @d;
+clickhouse,SELECT @a INTO @b FROM @c;,CREATE TABLE @b AS\nSELECT\n@a\nFROM\n@c;
+clickhouse,SELECT @a INTO @b;,CREATE TABLE @b\nAS\nSELECT\n@a;
+clickhouse,WITH @a INSERT INTO @b SELECT @c;,INSERT INTO @b WITH @a SELECT @c;
+clickhouse,"LEFT(@str,@chars)","SUBSTR(@str,0,@chars)"
+clickhouse,"RIGHT(@str,@chars)","SUBSTR(@str,-@chars)"
+clickhouse,"cast(@a as float)","cast(@a as float64)"
+clickhouse,"cast(@a as bigint)","cast(@a as int64)"
+clickhouse,"cast(@a as int)","cast(@a as int64)"
+clickhouse,date(@a),cast(@a as date)
+clickhouse,"cast(concat(@a) as date)","parse_date('%Y%m%d', concat(@a))"
+clickhouse,"cast(@a as date)","IF(SAFE_CAST(@a AS DATE) IS NULL,PARSE_DATE('%Y%m%d', cast(@a AS STRING)),SAFE_CAST(@a AS DATE))"
+clickhouse,"YEAR(@date)","EXTRACT(YEAR from @date)"
+clickhouse,"MONTH(@date)","EXTRACT(MONTH from @date)"
+clickhouse,"DAY(@date)","EXTRACT(DAY from @date)"
+clickhouse,"DATEPART(YEAR, @date)",EXTRACT(YEAR FROM @date)
+clickhouse,"DATEPART(MONTH, @date)",EXTRACT(MONTH FROM @date)
+clickhouse,"DATEPART(DAY, @date)",EXTRACT(DAY FROM @date)
+clickhouse,"union select","union distinct select"
+clickhouse,INTERSECT,INTERSECT DISTINCT
+clickhouse,"ISNULL(@a,@b)","IFNULL(@a,@b)"
+clickhouse,as \" @a \",as @a
+clickhouse,"coalesce(@([0-9]+)a, @b)","coalesce(@a, cast(@b as int64))"
+clickhouse,"coalesce(@a, @([0-9]+)b)","coalesce(cast(@a as int64), @b)"
+clickhouse,"cast(@a as decimal(@b))","cast(@a as float64)"
+clickhouse,"IF OBJECT_ID('@table', 'U') IS NULL CREATE TABLE @table (@definition);",CREATE TABLE IF NOT EXISTS @table (@definition);
+clickhouse,"int","INT64"
+clickhouse,"DATETIME2","DateTime64(7)"
+clickhouse,"INTEGER","Int32"
+clickhouse,"bigint","Int64"
+clickhouse,"float","Float64"
+clickhouse,VARCHAR(@a),String
+clickhouse,VARCHAR,String
+clickhouse,CHAR(@a),FixedString(@a)
+clickhouse,CHAR,String
+clickhouse,STRING NULL,String
+clickhouse,DATE NULL,Date
+clickhouse,DATETIME NULL,DateTime64(3)
+clickhouse,INT64 NULL,Int64
+clickhouse,FLOAT64 NULL,Float64
+clickhouse,NUMERIC NULL,NUMERIC
+clickhouse,"DOUBLE PRECISION","FLOAT64"
+clickhouse,"GETDATE()","CURRENT_DATE()"
+clickhouse,"CONSTRAINT @a DEFAULT CURRENT_DATE()",""
+clickhouse,DEFAULT @([0-9]+)a,""
+clickhouse,DEFAULT \"@a\",""
+clickhouse,"DEFAULT CURRENT_DATE()",""
+clickhouse,TRUNCATE TABLE @a;,DELETE FROM @a WHERE True;
+clickhouse,CREATE TABLE #@([^\s]+)table,DROP TABLE IF EXISTS %temp_prefix%%session_id%@table;\nCREATE TABLE %temp_prefix%%session_id%@table
+clickhouse,#@([^\s]+)table.@([^\s]+)field,%session_id%@table.@field
+clickhouse,#,%temp_prefix%%session_id%
+clickhouse,CREATE INDEX @index_name ON @table_col_cond;,-- bigquery does not support indexes
+clickhouse,DROP INDEX @index_name;,-- bigquery does not support indexes
+clickhouse,"DATEFROMPARTS(@year,@month,@day)","DATE(@year, @month, @day)"
+clickhouse,EOMONTH(@date),"DATE_SUB(DATE_TRUNC(DATE_ADD(@date, INTERVAL 1 MONTH), MONTH), INTERVAL 1 DAY)"
+clickhouse,"ISNUMERIC(@a)","CASE WHEN SAFE_CAST(@a AS FLOAT64) IS NULL THEN 0 ELSE 1 END"
+clickhouse,UPDATE STATISTICS @a;,-- not a thing in clickhouse
+clickhouse,NEWID(),GENERATE_UUID()
+clickhouse,"AS @(q[0-9]+)a","AS val_@a"
+clickhouse,"(@(q[0-9]+)a","(val_@a"
+clickhouse,"CHARINDEX(@a,@b)","STRPOS(@b,@a)"
+clickhouse,"\"","`"
