@@ -34,7 +34,7 @@ launchSqlRenderDeveloper <- function(launch.browser = TRUE) {
   shiny::runApp(appDir, display.mode = "normal", launch.browser = launch.browser)
 }
 
-is_installed <- function(pkg, version = 0) {
+is_installed <- function(pkg, version = "0") {
   installed_version <- tryCatch(utils::packageVersion(pkg), error = function(e) NA)
   !is.na(installed_version) && installed_version >= version
 }
