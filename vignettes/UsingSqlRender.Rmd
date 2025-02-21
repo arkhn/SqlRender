@@ -130,6 +130,7 @@ The `targetDialect` parameter can have the following values:
   - "sqlite"
   - "sqlite extended"
   - "sql server"
+  - "clickhouse"
   - "iris"
 
 ## Functions and structures supported by translate
