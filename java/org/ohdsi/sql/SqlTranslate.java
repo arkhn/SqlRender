@@ -43,6 +43,7 @@ public class SqlTranslate {
 	private static String BIG_QUERY = "bigquery";
 	private static String IMPALA = "impala";
 	private static String SPARK = "spark";
+	private static String CLICKHOUSE = "clickhouse";
 
 	protected static class Block extends StringUtils.Token {
 		public boolean isVariable;
@@ -501,12 +502,12 @@ public class SqlTranslate {
 		List<String[]> replacementPatterns = targetToReplacementPatterns.get(targetDialect);
 		if (replacementPatterns == null) {
 			throw new RuntimeException("Don't know how to translate to " + targetDialect
-					+ ". Valid target dialects are " + StringUtils.join(targetToReplacementPatterns.keySet(), ", "));
+					+ ". Valid target dialects in " + pathToReplacementPatterns + " are " + StringUtils.join(targetToReplacementPatterns.keySet(), ", "));
 		} else if (targetDialect.equalsIgnoreCase(BIG_QUERY)) {
 			sql = BigQuerySparkTranslate.translatebigQuery(sql);
 		} else if (targetDialect.equalsIgnoreCase(SPARK)) {
 			sql = BigQuerySparkTranslate.translateSpark(sql);
-		}
+		} 
 		sql = translateSql(sql, replacementPatterns, sessionId, oracleTempPrefix);
 		if (targetDialect.equalsIgnoreCase(IMPALA) || targetDialect.equalsIgnoreCase(BIG_QUERY) || targetDialect.equals(SPARK)) {
 			sql = StringUtils.replaceWithConcat(sql);
