@@ -22,7 +22,6 @@
 NULL
 
 .onLoad <- function(libname, pkgname) {
-  warning("libname: ", libname, " pkgname: ", pkgname)
   rJava::.jpackage(pkgname, lib.loc = libname)
 
   # Verify checksum of JAR:

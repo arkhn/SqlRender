@@ -220,7 +220,26 @@ public class BigQuerySparkTranslate {
 	 *
 	 * @param sql
 	 *            - the query to transform
+	 * @param pattern
+	 *            - the common table expression pattern to match
 	 * @return the query after transformation
+	 *
+	 * Example:
+	 * Input SQL:
+	 *   with cte(x, y) as (
+	 *     select a, b
+	 *     from table
+	 *   )
+	 *   select *
+	 *   from cte;
+	 *
+	 * Output SQL:  
+	 *   with cte as (
+	 *     select a as x, b as y  
+	 *     from table
+	 *   )
+	 *   select * 
+	 *   from cte;
 	 */
 	private static String bigQueryAliasCommonTableExpressions(String sql, String pattern) {
 		List<Block> cte_pattern = SqlTranslate.parseSearchPattern(pattern);
@@ -266,6 +285,7 @@ public class BigQuerySparkTranslate {
 	  else
 		  return string;
 	}
+	
 	/**
 	 * Finds complex expressions in a GROUP BY or ORDER BY list and replaces them with references to matching select list expressions.
 	 *
@@ -276,6 +296,27 @@ public class BigQuerySparkTranslate {
 	 * @param list_type
 	 *            - CommaListSeparator.ListType for the list to replace
 	 * @return the query with GROUP BY elements replaced
+	 *
+	 * Example:
+	 * Input SQL:
+	 *   select a + b as c, d
+	 *   from table
+	 *   group by a + b, d;
+	 *
+	 * Output SQL:
+	 *   select a + b as c, d  
+	 *   from table
+	 *   group by 1, 2;
+	 *
+	 * This transformation is necessary because BigQuery only allows grouping/ordering by 
+	 * - column names
+	 * - aliases defined in the SELECT clause
+	 * - ordinal positions of columns in the SELECT clause
+	 * It does not allow grouping/ordering by arbitrary expressions.
+	 *
+	 * This method replaces any complex expressions in the GROUP BY or ORDER BY with 
+	 * ordinal positions of the same expressions in the SELECT list, if a match is found.
+	 * This allows the query to be compatible with BigQuery's requirements.
 	 */
 	private static String bigQueryConvertSelectListReferences(String sql, String select_pattern, CommaListIterator.ListType list_type) {
 		// Iterates SELECT statements
@@ -345,6 +386,18 @@ public class BigQuerySparkTranslate {
 	 *
 	 * @param sql - the query to translate
 	 * @return the query after translation
+	 * 
+	 * Example:
+	 * Input SQL:  
+	 *   SELECT column1, COLUMN2 AS alias FROM "Table"
+	 * 
+	 * Output SQL:
+	 *   select column1, column2 as alias from "Table"
+	 *   
+	 * BigQuery requires identifiers like table and column names to exactly match case.
+	 * Lowercasing all identifiers allows queries to be more portable from other 
+	 * case-insensitive databases to BigQuery. Literals and variables are excluded
+	 * since they are case-sensitive.
 	 */
 	private static String bigQueryLowerCase(String sql) {
 		List<StringUtils.Token> tokens = StringUtils.tokenizeSql(sql);
@@ -398,6 +451,21 @@ public class BigQuerySparkTranslate {
 		return metaFields;
 	}
 
+	/**
+	 * Translates a CREATE TABLE statement to Spark syntax by converting it to a SELECT INTO statement
+	 * with NULL values cast to the appropriate types.
+	 * 
+	 * @param sql The CREATE TABLE SQL statement to translate
+	 * @return The translated SQL as a SELECT INTO statement
+	 * 
+	 * Example:
+	 * Input: CREATE TABLE my_table (id INTEGER, name VARCHAR(50));
+	 * Output: SELECT 
+	 *   CAST(NULL AS INTEGER) AS id,
+	 *   CAST(NULL AS VARCHAR(50)) AS name 
+	 * INTO my_table 
+	 * WHERE 1 = 0
+	 */
 	private static String sparkCreateTable(String sql) {
 		if (!sql.endsWith(";")) {
 			sql += ";";

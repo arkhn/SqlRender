@@ -505,6 +505,8 @@ public class SqlTranslate {
 					+ ". Valid target dialects in " + pathToReplacementPatterns + " are " + StringUtils.join(targetToReplacementPatterns.keySet(), ", "));
 		} else if (targetDialect.equalsIgnoreCase(BIG_QUERY)) {
 			sql = BigQuerySparkTranslate.translatebigQuery(sql);
+		} else if (targetDialect.equalsIgnoreCase(CLICKHOUSE)) {
+			sql = BigQuerySparkTranslate.translatebigQuery(sql);
 		} else if (targetDialect.equalsIgnoreCase(SPARK)) {
 			sql = BigQuerySparkTranslate.translateSpark(sql);
 		} 
